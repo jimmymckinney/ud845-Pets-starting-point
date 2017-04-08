@@ -16,7 +16,7 @@ public class PetDbHelper extends SQLiteOpenHelper {
                     PetEntry.COLUMN_PET_GENDER + " INTEGER NOT NULL, " +
                     PetEntry.COLUMN_PET_WEIGHT + " INTEGER NOT NULL DEFAULT 0);";*/
 
-    private static final String SQL_DELETE_ENTRIES =
+    public static final String SQL_DELETE_ENTRIES =
             "DROP TABLE IF EXISTS " + PetEntry.TABLE_NAME;
 
     public static final int DATABASE_VERSION = 1;

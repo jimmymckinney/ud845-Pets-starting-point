@@ -31,8 +31,6 @@ import android.widget.TextView;
 import com.example.android.pets.data.PetContract.PetEntry;
 import com.example.android.pets.data.PetDbHelper;
 
-import static android.R.attr.id;
-
 /**
  * Displays list of pets that were entered and stored in the app.
  */
@@ -59,6 +57,12 @@ public class CatalogActivity extends AppCompatActivity {
         displayDatabaseInfo();
     }
 
+    @Override
+    protected void onStart(){
+        super.onStart();
+        displayDatabaseInfo();
+    }
+
     /**
      * Temporary helper method to display information in the onscreen TextView about the state of
      * the pets database.
@@ -67,14 +71,52 @@ public class CatalogActivity extends AppCompatActivity {
         // Create and/or open a database to read from it
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
 
+        String[] projection = {
+                PetEntry._ID,
+                PetEntry.COLUMN_PET_NAME,
+                PetEntry.COLUMN_PET_BREED,
+                PetEntry.COLUMN_PET_GENDER,
+                PetEntry.COLUMN_PET_WEIGHT};
+        String selection = PetEntry._ID + "=?";
+        String[] selectionArgs = new String[] { PetEntry._ID };
+
+        Cursor cursor = db.query(PetEntry.TABLE_NAME, projection,
+                null, null,
+                null, null, null);
+
         // Perform this raw SQL query "SELECT * FROM pets"
         // to get a Cursor that contains all rows from the pets table.
-        Cursor cursor = db.rawQuery("SELECT * FROM " + PetEntry.TABLE_NAME, null);
+        //Cursor cursor = db.rawQuery("SELECT * FROM " + PetEntry.TABLE_NAME, null);
         try {
             // Display the number of rows in the Cursor (which reflects the number of rows in the
             // pets table in the database).
             TextView displayView = (TextView) findViewById(R.id.text_view_pet);
-            displayView.setText("Number of rows in pets database table: " + cursor.getCount());
+            displayView.setText("The pets table contains " + cursor.getCount() + " pets.\n\n");
+            displayView.append(PetEntry._ID + " - " + PetEntry.COLUMN_PET_NAME + " - ");
+            displayView.append(PetEntry.COLUMN_PET_NAME + " - " + PetEntry.COLUMN_PET_NAME + " - ");
+            displayView.append(PetEntry.COLUMN_PET_BREED + " - " + PetEntry.COLUMN_PET_GENDER + " - ");
+            displayView.append(PetEntry.COLUMN_PET_WEIGHT);
+
+            //Figure out the index of each column
+            int idColumnIndex = cursor.getColumnIndex(PetEntry._ID);
+            int nameColumIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_NAME);
+            int breedColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_BREED);
+            int genderColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_GENDER);
+            int weightColumnIndex = cursor.getColumnIndex(PetEntry.COLUMN_PET_WEIGHT);
+
+            //Iterate through all the returned rows in the cursor
+            while (cursor.moveToNext()) {
+                // Use that index to extract the String or Int value of the word
+                // at the current row the cursor is on.
+                int currentID = cursor.getInt(idColumnIndex);
+                String currentName = cursor.getString(nameColumIndex);
+                String currentBreed = cursor.getString(breedColumnIndex);
+                int currentGender = cursor.getInt(genderColumnIndex);
+                int currentWeight = cursor.getInt(weightColumnIndex);
+                //Displays the values from each column of the current row in the cursor in the TextView
+                displayView.append(("\n" + currentID + " - " + currentName + " - " + currentBreed
+                + " - " + currentGender + " - " + currentWeight));
+            }
         } finally {
             // Always close the cursor when you're done reading from it. This releases all its
             // resources and makes it invalid.
@@ -96,7 +138,14 @@ public class CatalogActivity extends AppCompatActivity {
         // Insert the new row, returning the primary key value of the new row
         long newRowId = db.insert(PetEntry.TABLE_NAME, null, values);
 
-        Log.v("CatalogActivity", "New row ID " + id);
+        Log.v("CatalogActivity", "New row ID " + newRowId);
+    }
+
+    private void deleteAllPets() {
+        SQLiteDatabase db = mDbHelper.getWritableDatabase();
+        db.delete(PetEntry.TABLE_NAME, null, null);
+        db.execSQL("DELETE FROM SQLITE_SEQUENCE WHERE NAME = '" + PetEntry.TABLE_NAME + "'");
+        displayDatabaseInfo();
     }
 
     @Override
@@ -118,7 +167,7 @@ public class CatalogActivity extends AppCompatActivity {
                 return true;
             // Respond to a click on the "Delete all entries" menu option
             case R.id.action_delete_all_entries:
-                // Do nothing for now
+                deleteAllPets();
                 return true;
         }
         return super.onOptionsItemSelected(item);
